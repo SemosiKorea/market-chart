@@ -1,0 +1,2 @@
+"""Market signal research toolkit."""
+
