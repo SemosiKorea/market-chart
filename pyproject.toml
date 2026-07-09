@@ -18,6 +18,7 @@ dependencies = [
 
 [project.scripts]
 kis-auth-smoke = "market_signal.cli.kis_auth_smoke:main"
+kis-qqq-rest-smoke = "market_signal.cli.kis_qqq_rest_smoke:main"
 
 [dependency-groups]
 dev = [

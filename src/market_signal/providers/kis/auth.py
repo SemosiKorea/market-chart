@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import json
+from datetime import UTC, datetime, timedelta
+from pathlib import Path
 from typing import Any
 
 import httpx
@@ -42,6 +45,17 @@ class KISAuthClient:
         if "access_token" not in data:
             raise KISAuthError("KIS access token response did not include access_token")
         return KISAccessToken.model_validate(data)
+
+    def issue_access_token_cached(self, *, refresh: bool = False) -> KISAccessToken:
+        cache_path = Path(self._settings.kis_token_cache_path)
+        if not refresh:
+            cached_token = _read_cached_access_token(cache_path)
+            if cached_token is not None:
+                return cached_token
+
+        token = self.issue_access_token()
+        _write_cached_access_token(cache_path, token)
+        return token
 
     def issue_approval_key(self) -> KISApprovalKey:
         response = self._post_json(
@@ -101,3 +115,68 @@ class KISAuthClient:
         if value is None:
             raise KISAuthError("required KIS secret was missing")
         return value.get_secret_value()
+
+
+def _read_cached_access_token(cache_path: Path) -> KISAccessToken | None:
+    if not cache_path.exists():
+        return None
+    try:
+        data = json.loads(cache_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+
+    if not isinstance(data, dict) or not _is_cache_fresh(data):
+        return None
+
+    token_value = data.get("access_token")
+    if not isinstance(token_value, str) or token_value == "":
+        return None
+
+    return KISAccessToken(
+        access_token=SecretStr(token_value),
+        token_type=str(data.get("token_type") or "Bearer"),
+        expires_in=_optional_int(data.get("expires_in")),
+        access_token_token_expired=_optional_str(data.get("access_token_token_expired")),
+    )
+
+
+def _write_cached_access_token(cache_path: Path, token: KISAccessToken) -> None:
+    cache_path.parent.mkdir(parents=True, exist_ok=True)
+    data = {
+        "access_token": token.access_token.get_secret_value(),
+        "token_type": token.token_type,
+        "expires_in": token.expires_in,
+        "access_token_token_expired": token.access_token_token_expired,
+        "cached_at": datetime.now(UTC).isoformat(),
+    }
+    cache_path.write_text(json.dumps(data), encoding="utf-8")
+    cache_path.chmod(0o600)
+
+
+def _is_cache_fresh(data: dict[str, Any]) -> bool:
+    cached_at_raw = data.get("cached_at")
+    if not isinstance(cached_at_raw, str):
+        return False
+    try:
+        cached_at = datetime.fromisoformat(cached_at_raw)
+    except ValueError:
+        return False
+    if cached_at.tzinfo is None or cached_at.utcoffset() is None:
+        return False
+
+    expires_in = _optional_int(data.get("expires_in")) or 86400
+    ttl = max(0, expires_in - 300)
+    return datetime.now(UTC) < cached_at.astimezone(UTC) + timedelta(seconds=ttl)
+
+
+def _optional_int(value: Any) -> int | None:
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _optional_str(value: Any) -> str | None:
+    if value is None:
+        return None
+    return str(value)

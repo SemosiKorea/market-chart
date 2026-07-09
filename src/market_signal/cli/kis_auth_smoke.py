@@ -18,6 +18,11 @@ def main() -> int:
         action="store_true",
         help="Only request a REST access token; skip WebSocket approval key issuance.",
     )
+    parser.add_argument(
+        "--refresh-token",
+        action="store_true",
+        help="Ignore the local access token cache and request a fresh REST token.",
+    )
     args = parser.parse_args()
 
     settings = load_settings()
@@ -26,7 +31,7 @@ def main() -> int:
         settings.require_kis_credentials()
         with httpx.Client(timeout=settings.kis_timeout_seconds) as http_client:
             client = KISAuthClient(settings=settings, http_client=http_client)
-            token = client.issue_access_token()
+            token = client.issue_access_token_cached(refresh=args.refresh_token)
             print("KIS REST token: OK")
             print(f"  token_type: {token.token_type}")
             print(f"  expires_in: {token.expires_in}")

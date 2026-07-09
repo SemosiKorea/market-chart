@@ -89,6 +89,35 @@ def test_auth_client_raises_redacted_error_on_http_failure() -> None:
     assert "app-key" not in message
 
 
+def test_issue_access_token_cached_reuses_fresh_cache(tmp_path) -> None:
+    calls = 0
+
+    def handler(_: httpx.Request) -> httpx.Response:
+        nonlocal calls
+        calls += 1
+        return httpx.Response(
+            200,
+            json={
+                "access_token": "new-token",
+                "token_type": "Bearer",
+                "expires_in": 86400,
+            },
+        )
+
+    settings = _settings(kis_token_cache_path=str(tmp_path / "kis_access_token.json"))
+    client = KISAuthClient(
+        settings=settings,
+        http_client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    first = client.issue_access_token_cached()
+    second = client.issue_access_token_cached()
+
+    assert first.access_token.get_secret_value() == "new-token"
+    assert second.access_token.get_secret_value() == "new-token"
+    assert calls == 1
+
+
 def _settings(**overrides: object) -> Settings:
     values = {
         "kis_env": "live",

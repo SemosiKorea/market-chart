@@ -30,6 +30,11 @@ class Settings(BaseSettings):
     kis_rest_base_url: AnyHttpUrl = AnyHttpUrl("https://openapi.koreainvestment.com:9443")
     kis_websocket_url: str = "ws://ops.koreainvestment.com:21000"
     kis_timeout_seconds: float = Field(default=10.0, gt=0)
+    kis_token_cache_path: str = ".cache/kis_access_token.json"
+    kis_rate_limit_retry_seconds: float = Field(default=1.0, gt=0)
+    kis_rate_limit_max_attempts: int = Field(default=3, gt=0)
+    kis_qqq_exchange_code: str = "NAS"
+    kis_qqq_symbol: str = "QQQ"
 
     ibkr_host: str = "127.0.0.1"
     ibkr_port: int = Field(default=7497, gt=0)
