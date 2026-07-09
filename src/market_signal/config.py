@@ -1,6 +1,7 @@
 from decimal import Decimal
+from typing import Literal
 
-from pydantic import Field, SecretStr
+from pydantic import AnyHttpUrl, Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -24,10 +25,33 @@ class Settings(BaseSettings):
     kis_app_key: SecretStr | None = None
     kis_app_secret: SecretStr | None = None
     kis_account: SecretStr | None = None
+    kis_account_product_code: SecretStr | None = None
+    kis_env: Literal["live", "paper"] = "live"
+    kis_rest_base_url: AnyHttpUrl = AnyHttpUrl("https://openapi.koreainvestment.com:9443")
+    kis_websocket_url: str = "ws://ops.koreainvestment.com:21000"
+    kis_timeout_seconds: float = Field(default=10.0, gt=0)
 
     ibkr_host: str = "127.0.0.1"
     ibkr_port: int = Field(default=7497, gt=0)
     ibkr_client_id: int = Field(default=1, ge=0)
+
+    def require_kis_credentials(self) -> None:
+        missing = [
+            name
+            for name, value in (
+                ("MARKET_SIGNAL_KIS_APP_KEY", self.kis_app_key),
+                ("MARKET_SIGNAL_KIS_APP_SECRET", self.kis_app_secret),
+                ("MARKET_SIGNAL_KIS_ACCOUNT", self.kis_account),
+                ("MARKET_SIGNAL_KIS_ACCOUNT_PRODUCT_CODE", self.kis_account_product_code),
+            )
+            if value is None or value.get_secret_value() == ""
+        ]
+        if missing:
+            raise ValueError(f"Missing KIS settings: {', '.join(missing)}")
+
+    @property
+    def kis_rest_base_url_text(self) -> str:
+        return str(self.kis_rest_base_url).rstrip("/")
 
 
 def load_settings() -> Settings:

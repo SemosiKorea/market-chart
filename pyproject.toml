@@ -16,6 +16,9 @@ dependencies = [
     "websockets>=13",
 ]
 
+[project.scripts]
+kis-auth-smoke = "market_signal.cli.kis_auth_smoke:main"
+
 [dependency-groups]
 dev = [
     "pytest>=8.3",
