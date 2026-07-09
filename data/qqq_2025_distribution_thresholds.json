@@ -1,0 +1,13 @@
+{
+  "symbol": "QQQ",
+  "year": 2025,
+  "confidence": "0.90",
+  "sample_size": 249,
+  "mean_return": "0.0008753181960207155",
+  "std_return": "0.014893636199403782",
+  "lower_threshold": "-0.023622533325064334",
+  "upper_threshold": "0.025373169717105754",
+  "empirical_min_return": "-0.06210895350545071100986034269",
+  "empirical_max_return": "0.1200306285452335595819256767",
+  "source": "KIS overseas dailyprice"
+}

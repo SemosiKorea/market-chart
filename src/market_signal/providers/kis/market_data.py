@@ -9,6 +9,7 @@ from typing import Any
 import httpx
 from pydantic import SecretStr
 
+from market_signal.analysis.qqq_distribution import DailyBar, parse_kis_daily_bars
 from market_signal.config import Settings
 from market_signal.domain import (
     DataDelayType,
@@ -127,6 +128,58 @@ class KISMarketDataClient:
             asking_outputs=asking_outputs,
             received_at=received_at,
         )
+
+    def get_overseas_daily_bars_year(
+        self,
+        *,
+        exchange: str,
+        symbol: str,
+        year: int,
+        adjusted: bool = True,
+        max_pages: int = 6,
+    ) -> list[DailyBar]:
+        start_date = datetime(year, 1, 1, tzinfo=UTC).date()
+        end_date = datetime(year, 12, 31, tzinfo=UTC).date()
+        base_date = f"{year}1231"
+        rows_by_date: dict[str, dict[str, Any]] = {}
+
+        for page in range(max_pages):
+            data = self._get_json(
+                "/uapi/overseas-price/v1/quotations/dailyprice",
+                tr_id="HHDFS76240000",
+                params={
+                    "AUTH": "",
+                    "EXCD": exchange,
+                    "SYMB": symbol,
+                    "GUBN": "0",
+                    "BYMD": base_date,
+                    "MODP": "1" if adjusted else "0",
+                },
+            )
+            rows = data.get("output2")
+            if not isinstance(rows, list) or not rows:
+                break
+
+            valid_rows = [row for row in rows if isinstance(row, dict) and isinstance(row.get("xymd"), str)]
+            for row in valid_rows:
+                xymd = str(row["xymd"])
+                if f"{year}0101" <= xymd <= f"{year}1231":
+                    rows_by_date[xymd] = row
+
+            earliest = min(str(row["xymd"]) for row in valid_rows)
+            if earliest <= f"{year}0101":
+                break
+
+            earliest_date = datetime.strptime(earliest, "%Y%m%d").date()
+            base_date = (earliest_date - timedelta(days=1)).strftime("%Y%m%d")
+            if page < max_pages - 1:
+                sleep(self._settings.kis_rate_limit_retry_seconds)
+
+        bars = parse_kis_daily_bars(rows_by_date.values())
+        filtered_bars = [bar for bar in bars if start_date <= bar.date <= end_date]
+        if len(filtered_bars) < 2:
+            raise KISMarketDataError(f"KIS daily bars for {symbol} {year} were insufficient")
+        return filtered_bars
 
     def _get_json(
         self,

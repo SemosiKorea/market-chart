@@ -35,6 +35,10 @@ class Settings(BaseSettings):
     kis_rate_limit_max_attempts: int = Field(default=3, gt=0)
     kis_qqq_exchange_code: str = "NAS"
     kis_qqq_symbol: str = "QQQ"
+    qqq_distribution_year: int = 2025
+    qqq_distribution_confidence: Decimal = Field(default=Decimal("0.90"), gt=0, lt=1)
+    qqq_distribution_threshold_path: str = "data/qqq_2025_distribution_thresholds.json"
+    qqq_distribution_chart_path: str = "reports/qqq_2025_daily_return_distribution.png"
 
     ibkr_host: str = "127.0.0.1"
     ibkr_port: int = Field(default=7497, gt=0)

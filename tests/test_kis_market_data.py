@@ -107,6 +107,54 @@ def test_market_data_client_retries_rate_limit_response() -> None:
     assert calls == 2
 
 
+def test_get_overseas_daily_bars_year_pages_until_start_of_year() -> None:
+    calls: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls.append(request)
+        if len(calls) == 1:
+            return httpx.Response(
+                200,
+                json={
+                    "rt_cd": "0",
+                    "output2": [
+                        {"xymd": "20251231", "clos": "110"},
+                        {"xymd": "20250901", "clos": "105"},
+                    ],
+                },
+            )
+        return httpx.Response(
+            200,
+            json={
+                "rt_cd": "0",
+                "output2": [
+                    {"xymd": "20250831", "clos": "104"},
+                    {"xymd": "20250101", "clos": "100"},
+                    {"xymd": "20241231", "clos": "99"},
+                ],
+            },
+        )
+
+    settings = _settings()
+    settings.kis_rate_limit_retry_seconds = 0.001
+    client = KISMarketDataClient(
+        settings=settings,
+        http_client=httpx.Client(transport=httpx.MockTransport(handler)),
+        access_token=SecretStr("access-token"),
+    )
+
+    bars = client.get_overseas_daily_bars_year(exchange="NAS", symbol="QQQ", year=2025)
+
+    assert [bar.date.isoformat() for bar in bars] == [
+        "2025-01-01",
+        "2025-08-31",
+        "2025-09-01",
+        "2025-12-31",
+    ]
+    assert calls[0].url.params["BYMD"] == "20251231"
+    assert calls[1].url.params["BYMD"] == "20250831"
+
+
 def _settings() -> Settings:
     return Settings(
         kis_env="live",

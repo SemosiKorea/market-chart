@@ -6,6 +6,7 @@ dependencies = [
     "aiohttp>=3.10",
     "httpx>=0.27",
     "ib-insync>=0.9.86",
+    "matplotlib>=3.9",
     "numpy>=2.0",
     "pandas>=2.2",
     "pydantic>=2.8",
@@ -19,6 +20,7 @@ dependencies = [
 [project.scripts]
 kis-auth-smoke = "market_signal.cli.kis_auth_smoke:main"
 kis-qqq-rest-smoke = "market_signal.cli.kis_qqq_rest_smoke:main"
+qqq-2025-distribution = "market_signal.cli.qqq_2025_distribution:main"
 
 [dependency-groups]
 dev = [
