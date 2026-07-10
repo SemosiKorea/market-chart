@@ -39,10 +39,15 @@ class Settings(BaseSettings):
     qqq_distribution_confidence: Decimal = Field(default=Decimal("0.90"), gt=0, lt=1)
     qqq_distribution_threshold_path: str = "data/qqq_2025_distribution_thresholds.json"
     qqq_distribution_chart_path: str = "reports/qqq_2025_daily_return_distribution.png"
+    qqq_strategy_state_path: str = ".cache/qqq_epu_strategy_state.json"
 
     ibkr_host: str = "127.0.0.1"
     ibkr_port: int = Field(default=7497, gt=0)
     ibkr_client_id: int = Field(default=1, ge=0)
+
+    telegram_bot_token: SecretStr | None = None
+    telegram_chat_id: SecretStr | None = None
+    telegram_timeout_seconds: float = Field(default=10.0, gt=0)
 
     def require_kis_credentials(self) -> None:
         missing = [
@@ -57,6 +62,18 @@ class Settings(BaseSettings):
         ]
         if missing:
             raise ValueError(f"Missing KIS settings: {', '.join(missing)}")
+
+    def require_telegram_credentials(self) -> None:
+        missing = [
+            name
+            for name, value in (
+                ("MARKET_SIGNAL_TELEGRAM_BOT_TOKEN", self.telegram_bot_token),
+                ("MARKET_SIGNAL_TELEGRAM_CHAT_ID", self.telegram_chat_id),
+            )
+            if value is None or value.get_secret_value() == ""
+        ]
+        if missing:
+            raise ValueError(f"Missing Telegram settings: {', '.join(missing)}")
 
     @property
     def kis_rest_base_url_text(self) -> str:
