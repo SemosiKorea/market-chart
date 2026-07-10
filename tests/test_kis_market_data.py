@@ -155,6 +155,44 @@ def test_get_overseas_daily_bars_year_pages_until_start_of_year() -> None:
     assert calls[1].url.params["BYMD"] == "20250831"
 
 
+def test_get_overseas_daily_ohlc_year_parses_open_high_low_close() -> None:
+    def handler(_: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            json={
+                "rt_cd": "0",
+                "output2": [
+                    {
+                        "xymd": "20250103",
+                        "open": "100",
+                        "high": "103",
+                        "low": "99",
+                        "clos": "102",
+                    },
+                    {
+                        "xymd": "20250102",
+                        "open": "98",
+                        "high": "101",
+                        "low": "97",
+                        "clos": "100",
+                    },
+                ],
+            },
+        )
+
+    client = KISMarketDataClient(
+        settings=_settings(),
+        http_client=httpx.Client(transport=httpx.MockTransport(handler)),
+        access_token=SecretStr("access-token"),
+    )
+
+    bars = client.get_overseas_daily_ohlc_year(exchange="NAS", symbol="QQQ", year=2025)
+
+    assert [bar.date.isoformat() for bar in bars] == ["2025-01-02", "2025-01-03"]
+    assert bars[0].open == Decimal("98")
+    assert bars[1].close == Decimal("102")
+
+
 def _settings() -> Settings:
     return Settings(
         kis_env="live",

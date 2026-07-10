@@ -5,6 +5,7 @@ from market_signal.providers.kis.auth import (
     KISAuthError,
 )
 from market_signal.providers.kis.market_data import (
+    DailyOHLCBar,
     KISMarketDataClient,
     KISMarketDataError,
     KISOverseasQuoteSnapshot,
@@ -15,6 +16,7 @@ __all__ = [
     "KISApprovalKey",
     "KISAuthClient",
     "KISAuthError",
+    "DailyOHLCBar",
     "KISMarketDataClient",
     "KISMarketDataError",
     "KISOverseasQuoteSnapshot",

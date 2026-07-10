@@ -22,6 +22,7 @@ kis-auth-smoke = "market_signal.cli.kis_auth_smoke:main"
 kis-qqq-rest-smoke = "market_signal.cli.kis_qqq_rest_smoke:main"
 qqq-2025-distribution = "market_signal.cli.qqq_2025_distribution:main"
 qqq-epu-telegram-alert = "market_signal.cli.qqq_epu_telegram_alert:main"
+qqq-daily-briefing-telegram = "market_signal.cli.qqq_daily_briefing_telegram:main"
 
 [dependency-groups]
 dev = [

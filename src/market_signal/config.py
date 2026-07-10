@@ -40,6 +40,7 @@ class Settings(BaseSettings):
     qqq_distribution_threshold_path: str = "data/qqq_2025_distribution_thresholds.json"
     qqq_distribution_chart_path: str = "reports/qqq_2025_daily_return_distribution.png"
     qqq_strategy_state_path: str = ".cache/qqq_epu_strategy_state.json"
+    qqq_daily_briefing_state_path: str = ".cache/qqq_daily_briefing_state.json"
 
     ibkr_host: str = "127.0.0.1"
     ibkr_port: int = Field(default=7497, gt=0)
